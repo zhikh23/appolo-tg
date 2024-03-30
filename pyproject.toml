@@ -1,0 +1,17 @@
+[tool.poetry]
+name = "appolo-tg"
+version = "0.1.0"
+description = "Телеграм-фронтенд для проекта Аполлон"
+authors = ["zhikh <zhikh.k@gmail.com>"]
+readme = "README.md"
+packages = [{include = "appolo_tg"}]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+aiogram = "^3.4.1"
+environs = "^11.0.0"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
