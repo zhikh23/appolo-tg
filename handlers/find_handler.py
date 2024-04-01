@@ -47,10 +47,10 @@ async def find__by_id(message: Message, state: FSMContext):
         "Введите id ресурса:\n",
         reply_markup=ReplyKeyboardRemove(),
     )
-    await state.set_state(States.find__wait_id)
+    await state.set_state(States.find__enter_id)
 
 
-@router.message(States.find__wait_id)
+@router.message(States.find__enter_id)
 async def find__enter_id(message: Message, state: FSMContext):
     assert message.text
     if not message.text.isdigit():
@@ -59,8 +59,8 @@ async def find__enter_id(message: Message, state: FSMContext):
             "Попробуйте ещё раз или используйте команду /cancel"
         )
     res_id = int(message.text)
-    await state.update_data({ "find__id": res_id })
-    await __find__process(message, state)
+    await state.update_data({"find__id": res_id})
+    await find__process(message, state)
 # =============================================================================
 
 
@@ -71,15 +71,15 @@ async def find__by_name(message: Message, state: FSMContext):
         "Введите название ресурса или его часть:\n",
         reply_markup=ReplyKeyboardRemove(),
     )
-    await state.set_state(States.find__wait_name)
+    await state.set_state(States.find__enter_name)
 
 
-@router.message(States.find__wait_name)
+@router.message(States.find__enter_name)
 async def find__enter_name(message: Message, state: FSMContext):
     assert message.text
     res_name = message.text
-    await state.update_data({ "find__name": res_name })
-    await __find__process(message, state)
+    await state.update_data({"find__name": res_name})
+    await find__process(message, state)
 # =============================================================================
 
 
@@ -90,10 +90,10 @@ async def find__by_tags(message: Message, state: FSMContext):
         "Введите #теги через пробел:\n",
         reply_markup=ReplyKeyboardRemove(),
     )
-    await state.set_state(States.find__wait_tags)
+    await state.set_state(States.find__enter_tags)
 
 
-@router.message(States.find__wait_tags)
+@router.message(States.find__enter_tags)
 async def find__enter_tags(message: Message, state: FSMContext):
     assert message.text
     res_tags = message.text.split()
@@ -102,15 +102,14 @@ async def find__enter_tags(message: Message, state: FSMContext):
             return await message.reply(
                 f"\"{tag}\" не похоже на тег :( Попробуйте ещё раз"
             )
-    await state.update_data({ "find__tags": res_tags })
-    await __find__process(message, state)
+    await state.update_data({"find__tags": res_tags})
+    await find__process(message, state)
 # =============================================================================
 
 
-
-async def __find__process(message: Message, state: FSMContext):
+async def find__process(message: Message, state: FSMContext):
     data = await state.get_data()
-    res_id: int = data.get("find__id", None) 
+    res_id: int = data.get("find__id", None)
     res_name: str = data.get("find__name", None)
     res_tags: list[str] = data.get("find__tags", [])
 
@@ -127,9 +126,9 @@ async def __find__process(message: Message, state: FSMContext):
         reply_text,
         reply_markup=ReplyKeyboardRemove(),
     )
-    
+
     time.sleep(1)
-    
+
     await message.reply("*Делаю вид, что что-то нашёл*")
     await state.clear()
 
