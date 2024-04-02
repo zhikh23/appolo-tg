@@ -8,7 +8,7 @@ from aiogram.types import KeyboardButton, ReplyKeyboardMarkup, ReplyKeyboardRemo
 import constants
 from handlers.states import States
 from repository import Repository
-from utils.validators import validate_url
+from utils.validators import validate_resource_name, validate_tag, validate_url
 
 
 router = Router()
@@ -133,9 +133,9 @@ async def __load__prompt_name(message: Message, state: FSMContext):
 async def load__enter_name(message: Message, state: FSMContext):
     assert message.text
     res_name = message.text
-    if len(res_name) < constants.MIN_RESOURCE_NAME_LENGTH:
+    if not validate_resource_name(res_name):
         return await message.reply(
-            "Мне кажется, или имя слишком короткое?\n"
+            "Мне кажется, что это имя слишком короткое :(\n"
             "Попробуйте ещё раз\n",
             reply_markup=ReplyKeyboardRemove(),
         )
@@ -176,12 +176,13 @@ async def __load__prompt_tags(message: Message, state: FSMContext):
 @router.message(States.load__enter_tags)
 async def load__enter_tags(message: Message, state: FSMContext):
     assert message.text
-    res_tags = message.text.split()
-    for tag in res_tags:
-        if not tag.startswith("#"):
+    tags = message.text.split()
+    for tag in tags:
+        if not validate_tag(tag):
             return await message.reply(
                 f"\"{tag}\" не похоже на тег :( Попробуйте ещё раз\n"
             )
+    res_tags = list(map(lambda s: s.removeprefix("#"), tags))
     await state.update_data({"load__tags": res_tags})
     await __load__process(message, state)
 

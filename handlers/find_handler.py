@@ -96,12 +96,13 @@ async def find__by_tags(message: Message, state: FSMContext):
 @router.message(States.find__enter_tags)
 async def find__enter_tags(message: Message, state: FSMContext):
     assert message.text
-    res_tags = message.text.split()
-    for tag in res_tags:
+    tags = message.text.split()
+    for tag in tags:
         if not tag.startswith("#"):
             return await message.reply(
                 f"\"{tag}\" не похоже на тег :( Попробуйте ещё раз"
             )
+    res_tags = list(map(lambda s: s.removeprefix("#"), tags))
     await state.update_data({"find__tags": res_tags})
     await find__process(message, state)
 # =============================================================================
