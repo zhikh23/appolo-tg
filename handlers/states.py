@@ -13,3 +13,4 @@ class States(StatesGroup):
     load__enter_name = State()
     load__enter_description = State()
     load__enter_tags = State()
+    load__enter_confirm = State()

@@ -16,9 +16,13 @@ repo = Repository()
 
 ANS_LOAD__URL = "Ссылку на ресурс"
 ANS_LOAD__FILE = "Файл"
-
 btn_url = KeyboardButton(text=ANS_LOAD__URL)
 btn_file = KeyboardButton(text=ANS_LOAD__FILE)
+
+ANS_LOAD__YES = "Да"
+ANS_LOAD__NO = "Нет"
+btn_yes = KeyboardButton(text=ANS_LOAD__YES)
+btn_no  = KeyboardButton(text=ANS_LOAD__NO)
 
 
 @router.message(Command("load"))
@@ -108,7 +112,7 @@ async def load__enter_file(message: Message, state: FSMContext) -> None:
     return await __load__prompt_name(message, state)
 
 
-async def load__wait_url(message: Message, state: FSMContext):
+async def load__wait_url(message: Message, state: FSMContext) -> None:
     await message.answer(
         "Введите url ресурса:\n",
         reply_markup=ReplyKeyboardRemove(),
@@ -116,7 +120,7 @@ async def load__wait_url(message: Message, state: FSMContext):
     await state.set_state(States.load__enter_url)
 
 
-async def __load__prompt_name(message: Message, state: FSMContext):
+async def __load__prompt_name(message: Message, state: FSMContext) -> None:
     await message.answer(
         "Введите уникальное имя ресурса:\n\n"
         "_Название должно отражать содержимое ресурса и отличать его от "
@@ -130,20 +134,21 @@ async def __load__prompt_name(message: Message, state: FSMContext):
 
 
 @router.message(States.load__enter_name)
-async def load__enter_name(message: Message, state: FSMContext):
+async def load__enter_name(message: Message, state: FSMContext) -> None:
     assert message.text
     res_name = message.text
     if not validate_resource_name(res_name):
-        return await message.reply(
+        await message.reply(
             "Мне кажется, что это имя слишком короткое :(\n"
             "Попробуйте ещё раз\n",
             reply_markup=ReplyKeyboardRemove(),
         )
+        return
     await state.update_data({"load__name": res_name})
     await load__wait_description(message, state)
 
 
-async def load__wait_description(message: Message, state: FSMContext):
+async def load__wait_description(message: Message, state: FSMContext) -> None:
     await message.answer(
         "Хорошо, а теперь опишите ресурс или пропустите командой /continue\n",
         reply_markup=ReplyKeyboardRemove(),
@@ -152,19 +157,19 @@ async def load__wait_description(message: Message, state: FSMContext):
 
 
 @router.message(Command("continue"), States.load__enter_description)
-async def load__skip_description(message: Message, state: FSMContext):
+async def load__skip_description(message: Message, state: FSMContext) -> None:
     await __load__prompt_tags(message, state)
 
 
 @router.message(States.load__enter_description)
-async def load__enter_description(message: Message, state: FSMContext):
+async def load__enter_description(message: Message, state: FSMContext) -> None:
     assert message.text
     res_desc = message.text
     await state.update_data({"load__description": res_desc})
     await __load__prompt_tags(message, state)
 
 
-async def __load__prompt_tags(message: Message, state: FSMContext):
+async def __load__prompt_tags(message: Message, state: FSMContext) -> None:
     await message.answer(
         "Последнее: введите #теги черех пробел, по которым другие студенты "
         "могли бы найти ресурс:\n",
@@ -174,19 +179,21 @@ async def __load__prompt_tags(message: Message, state: FSMContext):
 
 
 @router.message(States.load__enter_tags)
-async def load__enter_tags(message: Message, state: FSMContext):
+async def load__enter_tags(message: Message, state: FSMContext) -> None:
     assert message.text
     tags = message.text.split()
     for tag in tags:
         if not validate_tag(tag):
-            return await message.reply(
+            await message.reply(
                 f"\"{tag}\" не похоже на тег :( Попробуйте ещё раз\n"
             )
+            return
     res_tags = list(map(lambda s: s.removeprefix("#"), tags))
     await state.update_data({"load__tags": res_tags})
     await __load__process(message, state)
 
-async def __load__process(message: Message, state: FSMContext):
+
+async def __load__prompt_confirm(message: Message, state: FSMContext) -> None:
     data = await state.get_data()
 
     msg = "Подтвердить загрузку?\n"
@@ -203,5 +210,32 @@ async def __load__process(message: Message, state: FSMContext):
 
     msg += f"Название: {name}\nОписание: {description}\nТеги: {tags}\n"
 
-    await message.answer(msg)
+    await message.answer(
+        msg, 
+        reply_markup=ReplyKeyboardMarkup(keyboard=[
+            [ btn_yes, btn_no ]
+        ])
+    )
+    await state.set_state(States.load__enter_confirm)
+
+
+@router.message(States.load__enter_confirm, F.text == ANS_LOAD__YES)
+async def __load__process(message: Message, state: FSMContext) -> None:
+    from random import randint
+    random_id = randint(100000, 999999)
+    await message.reply(
+        "Успешно загружено\n"
+        f"ID ресурса: `{random_id}`\n",
+        parse_mode="MarkdownV2",
+        reply_markup=ReplyKeyboardRemove(),
+    )
+    await state.clear()
+
+
+@router.message(States.load__enter_confirm)
+async def __load__cancel_confirm(message: Message, state: FSMContext) -> None:
+    await message.reply(
+        "Отменено\n",
+        reply_markup=ReplyKeyboardRemove(),
+    )
     await state.clear()
